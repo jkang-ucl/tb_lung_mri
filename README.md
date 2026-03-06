@@ -61,12 +61,6 @@ The import pipeline performs the following steps:
 2. Scan Processed for already imported acquisitions.
 3. Compare the two lists.
 4. Import only acquisitions that have not yet been processed.
-5. Report which acquisitions were processed or skipped.
-
-An acquisition is considered processed if the following file exists:
-
-Processed/PatientID/Timepoint/imports/Acquisition/acquisition.mat
-
 
 ## Configuration
 
