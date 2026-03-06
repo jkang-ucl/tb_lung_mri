@@ -13,6 +13,7 @@ There are two key functions of the repository:
 
 The raw data directory must follow this structure:
 
+```
 RawDICOM/
 └── PatientID/
     ├── TP1/
@@ -20,6 +21,7 @@ RawDICOM/
     └── TP2/
         └── DICOM FILES ...
   ...
+```
 
 Notes:
 
@@ -30,6 +32,7 @@ Notes:
 
 Imported data is stored separately from raw data.
 
+```
 Processed/
 └── PatientID/
     └── TP1/
@@ -54,6 +57,7 @@ Processed/
         │       ├── TE_1p817/
         │       │   └── acquisition.mat
         │       └── ...
+```
 
 Each acquisition is converted into a single MATLAB file called acquisition.mat.
 
