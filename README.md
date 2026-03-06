@@ -6,7 +6,7 @@
 This repository aims to help facilitate the analysis of lung MRI images, with regards to T2 mapping and R2* mapping in particular. 
 There are two key functions of the repository: 
 
-1. Raw DICOM data must be imported into an adequate MATLAB format. See the import section for further details.  
+1. DICOM import - Raw DICOM data must be imported into a MATLAB-readable format for analysis
 2. Quantitative analysis - T2 and R2* mapping
 
 ## Import Process
@@ -14,9 +14,11 @@ There are two key functions of the repository:
 The raw data directory must follow this structure:
 
 RawDICOM/
-  PatientID/
-    TP1/
-    TP2/
+└── PatientID/
+    ├── TP1/
+    │   └── DICOM FILES ...
+    └── TP2/
+        └── DICOM FILES ...
   ...
 
 Notes:
@@ -29,23 +31,29 @@ Notes:
 Imported data is stored separately from raw data.
 
 Processed/
-  PatientID/
-    TP1/
-      imports/
-        T2_Dixon_TE30/
-          water/
-            acquisition.mat
-          fat/
-            acquisition.mat
-          ...
-        T2_Dixon_TE50/
-          ... (same as TE 30)
-        qDixon_raw/
-          TE_1p037/
-            acquisition.mat
-          TE_1p817/
-            acquisition.mat 
-          ...
+└── PatientID/
+    └── TP1/
+        ├── imports/
+        │   ├── T2_Dixon_TE30/
+        │   │   ├── water/
+        │   │   │   └── acquisition.mat
+        │   │   ├── fat/
+        │   │   │   └── acquisition.mat
+        │   │   └── ...
+        │   │
+        │   ├── T2_Dixon_TE50/
+        │   │   ├── water/
+        │   │   │   └── acquisition.mat
+        │   │   ├── fat/
+        │   │   │   └── acquisition.mat
+        │   │   └── ...
+        │   │
+        │   └── qDixon_raw/
+        │       ├── TE_1p037/
+        │       │   └── acquisition.mat
+        │       ├── TE_1p817/
+        │       │   └── acquisition.mat
+        │       └── ...
 
 Each acquisition is converted into a single MATLAB file called acquisition.mat.
 
