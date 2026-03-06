@@ -1,104 +1,59 @@
 
 # Lung qMRI Repository
 
-## Data & Folder Structure
+## Data Pipeline
 
-This repository separates raw DICOM data, imported data, and analysis outputs.
-The goal is to keep raw data unchanged while allowing analyses to be rerun without re-importing DICOM files.
+This repository aims to help facilitate the analysis of lung MRI images, with regards to T2 mapping and R2* mapping in particular. 
+There are two key functions of the repository: 
 
-Key principles:
+1. Raw DICOM data must be imported into an adequate MATLAB format. See the import section for further details.  
+2. Quantitative analysis - T2 and R2* mapping
 
-1. Raw data is never modified or deleted.
-2. DICOM import is performed once per acquisition.
-3. Analysis outputs are stored separately from imported data.
-4. The pipeline detects new acquisitions automatically and processes only those that are missing.
-
----
-
-## Raw Data Structure
+## Import Process
 
 The raw data directory must follow this structure:
 
 RawDICOM/
-PatientID/
-TP1/
-T2_Dixon_TE30/
-T2_Dixon_TE50/
-GRE6pt_Dixon/
-TP2/
-T2_Dixon_TE30/
-T2_Dixon_TE50/
-GRE6pt_Dixon/
-
-Example:
-
-RawDICOM/
-Patient001/
-TP1/
-T2_Dixon_TE30/
-T2_Dixon_TE50/
-GRE6pt_Dixon/
-TP2/
-T2_Dixon_TE30/
-T2_Dixon_TE50/
-GRE6pt_Dixon/
+  PatientID/
+    TP1/
+    TP2/
+  ...
 
 Notes:
 
 * PatientID should be a unique participant identifier.
 * Timepoints should be labelled clearly (for example TP1, TP2).
-* Acquisition folders should have consistent descriptive names.
-* Each acquisition folder should contain only DICOM slices from a single acquisition.
-
-Example acquisition folder:
-
-T2_Dixon_TE30/
-IM0001.dcm
-IM0002.dcm
-IM0003.dcm
 
 ---
-
-## Processed Data Structure
 
 Imported data is stored separately from raw data.
 
 Processed/
-PatientID/
-TP1/
-imports/
-T2_Dixon_TE30/
-acquisition.mat
-T2_Dixon_TE50/
-acquisition.mat
-GRE6pt_Dixon/
-acquisition.mat
+  PatientID/
+    TP1/
+      imports/
+        T2_Dixon_TE30/
+          water/
+            acquisition.mat
+          fat/
+            acquisition.mat
+          ...
+        T2_Dixon_TE50/
+          ... (same as TE 30)
+        qDixon_raw/
+          TE_1p037/
+            acquisition.mat
+          TE_1p817/
+            acquisition.mat 
+          ...
 
 Each acquisition is converted into a single MATLAB file called acquisition.mat.
 
 This file contains all image data and metadata from the original DICOM folder.
 
-Importing does not filter or select specific image types.
-All Dixon outputs (water, fat, in-phase, opposed-phase) are preserved.
 
 ---
 
-## Analysis Outputs
-
-Analysis outputs are stored separately from imports.
-
-Processed/
-PatientID/
-TP1/
-analyses/
-T2_map/
-R2star_map/
-
-This allows analyses to be rerun without re-importing DICOM data.
-
----
-
-## Import Pipeline Logic
 
 The import pipeline performs the following steps:
 
@@ -112,38 +67,20 @@ An acquisition is considered processed if the following file exists:
 
 Processed/PatientID/Timepoint/imports/Acquisition/acquisition.mat
 
----
 
 ## Configuration
 
 Paths to the raw and processed directories are defined in:
 
-config/config_local.m
+config/local_config.m
 
-This file is not tracked in version control so that local data paths and sensitive information are not stored in the repository.
+This file is not tracked in version control - the default_config.m can be modified to insert the relevant paths
 
 Example:
 
+```matlab
 function cfg = config_local()
-
-```
 cfg.paths.rawData = '/path/to/RawDICOM';
-cfg.paths.processed = '/path/to/Processed';
-```
-
+cfg.paths.processedData = '/path/to/ProcessedData';
 end
-
----
-
-## Running the Import Pipeline
-
-The import pipeline is executed via:
-
-run/import_dicoms.m
-
-This script:
-
-* loads the configuration
-* scans raw acquisitions
-* detects missing imports
-* processes new acquisitions automatically
+```
