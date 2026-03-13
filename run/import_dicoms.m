@@ -1,66 +1,3 @@
-% IMPORT_DICOMS  Import raw DICOM scans into MATLAB format.
-%
-% DESCRIPTION
-%   This script is the entry point for the DICOM import pipeline.
-%   It scans the RawDICOM directory for available scan sessions,
-%   checks which scans have already been processed, and imports
-%   any new scans that have not yet been converted.
-%
-% PIPELINE LOGIC
-%   1. Load config
-%   2. Find raw scans
-%   3. Check which scans are already processed
-%   4. Group DICOMs into:
-%        - T2_Dixon_TE30
-%        - T2_Dixon_TE50
-%        - qDixon_raw (split by EchoTime, excluding TE = 0)
-%   5. Split T2 Dixon groups by ImageType:
-%        - water
-%        - fat
-%        - IP
-%        - OP
-%   6. Save imported .mat files into the Processed folder
-%
-% RAW DATA STRUCTURE
-%   RawDICOM/
-%       PatientID/
-%           TP1/
-%           TP2/
-%
-% PROCESSED DATA STRUCTURE
-%   Processed/
-%       PatientID/
-%           TP1/
-%               imports/
-%                   T2_Dixon_TE30/
-%                       water/
-%                           acquisition.mat
-%                       fat/
-%                           acquisition.mat
-%                       IP/
-%                           acquisition.mat
-%                       OP/
-%                           acquisition.mat
-%                   T2_Dixon_TE50/
-%                       water/
-%                           acquisition.mat
-%                       fat/
-%                           acquisition.mat
-%                       IP/
-%                           acquisition.mat
-%                       OP/
-%                           acquisition.mat
-%                   qDixon_raw/
-%                       TE_1p037/
-%                           acquisition.mat
-%                       ...
-%
-% NOTES
-%   - Raw data is never modified.
-%   - Importing is only performed once per scan session.
-%   - The script automatically skips scans that have already
-%     been processed.
-
 addpath('../config')
 addpath(genpath('../src'))
 
@@ -90,7 +27,8 @@ for i = 1:nRaw
 
     fprintf('Processing %s / %s\n', rawPatient, rawTimepoint);
 
-    % Create processed folder structure
+    %% Create processed folder structure
+
     procPatientPath = fullfile(cfg.paths.processedData, rawPatient);
     procTimepointPath = fullfile(procPatientPath, rawTimepoint);
     importsPath = fullfile(procTimepointPath, 'imports');
@@ -107,12 +45,30 @@ for i = 1:nRaw
         mkdir(importsPath);
     end
 
-    % Group files in this scan
+
+    %% Create analysis folder structure (NEW)
+
+    analysisPatientPath = fullfile(cfg.paths.analysisData, rawPatient);
+    analysisTimepointPath = fullfile(analysisPatientPath, rawTimepoint);
+
+    if ~exist(analysisPatientPath, 'dir')
+        mkdir(analysisPatientPath);
+    end
+
+    if ~exist(analysisTimepointPath, 'dir')
+        mkdir(analysisTimepointPath);
+    end
+
+
+    %% Group files in this scan
+
     groups = group_scan_dicoms(scanPath);
 
-    % -------------------------
+
+    %% -------------------------
     % Save T2_Dixon_TE30 split by ImageType
     % -------------------------
+
     if ~isempty(groups.T2_Dixon_TE30)
 
         te30Path = fullfile(importsPath, 'T2_Dixon_TE30');
@@ -126,6 +82,7 @@ for i = 1:nRaw
         t2types.OP = {};
 
         for j = 1:length(groups.T2_Dixon_TE30)
+
             info = dicominfo(groups.T2_Dixon_TE30{j});
 
             if isfield(info, 'ImageType')
@@ -137,34 +94,43 @@ for i = 1:nRaw
             if isfield(t2types, typeLabel)
                 t2types.(typeLabel){end+1} = groups.T2_Dixon_TE30{j};
             end
+
         end
 
-        t2Labels = {'water', 'fat', 'IP', 'OP'};
+        t2Labels = {'water','fat','IP','OP'};
 
         for j = 1:length(t2Labels)
+
             label = t2Labels{j};
 
             if ~isempty(t2types.(label))
-                typePath = fullfile(te30Path, label);
-                if ~exist(typePath, 'dir')
+
+                typePath = fullfile(te30Path,label);
+
+                if ~exist(typePath,'dir')
                     mkdir(typePath);
                 end
 
-                outputFile = fullfile(typePath, 'acquisition.mat');
-                save_dicom_group(t2types.(label), outputFile);
+                outputFile = fullfile(typePath,'acquisition.mat');
 
-                fprintf('  Saved T2_Dixon_TE30 / %s\n', label);
+                save_dicom_group(t2types.(label),outputFile);
+
+                fprintf('  Saved T2_Dixon_TE30 / %s\n',label);
+
             end
         end
     end
 
-    % -------------------------
+
+    %% -------------------------
     % Save T2_Dixon_TE50 split by ImageType
     % -------------------------
+
     if ~isempty(groups.T2_Dixon_TE50)
 
-        te50Path = fullfile(importsPath, 'T2_Dixon_TE50');
-        if ~exist(te50Path, 'dir')
+        te50Path = fullfile(importsPath,'T2_Dixon_TE50');
+
+        if ~exist(te50Path,'dir')
             mkdir(te50Path);
         end
 
@@ -174,70 +140,180 @@ for i = 1:nRaw
         t2types.OP = {};
 
         for j = 1:length(groups.T2_Dixon_TE50)
+
             info = dicominfo(groups.T2_Dixon_TE50{j});
 
-            if isfield(info, 'ImageType')
+            if isfield(info,'ImageType')
                 typeLabel = classify_t2_image_type(info.ImageType);
             else
                 typeLabel = 'unknown';
             end
 
-            if isfield(t2types, typeLabel)
+            if isfield(t2types,typeLabel)
                 t2types.(typeLabel){end+1} = groups.T2_Dixon_TE50{j};
             end
+
         end
 
-        t2Labels = {'water', 'fat', 'IP', 'OP'};
+        t2Labels = {'water','fat','IP','OP'};
 
         for j = 1:length(t2Labels)
+
             label = t2Labels{j};
 
             if ~isempty(t2types.(label))
-                typePath = fullfile(te50Path, label);
-                if ~exist(typePath, 'dir')
+
+                typePath = fullfile(te50Path,label);
+
+                if ~exist(typePath,'dir')
                     mkdir(typePath);
                 end
 
-                outputFile = fullfile(typePath, 'acquisition.mat');
-                save_dicom_group(t2types.(label), outputFile);
+                outputFile = fullfile(typePath,'acquisition.mat');
 
-                fprintf('  Saved T2_Dixon_TE50 / %s\n', label);
+                save_dicom_group(t2types.(label),outputFile);
+
+                fprintf('  Saved T2_Dixon_TE50 / %s\n',label);
+
             end
         end
     end
 
-    % -------------------------
+
+    %% -------------------------
     % Save qDixon echoes
     % -------------------------
+
     if ~isempty(groups.qDixon_raw)
-        qdixonPath = fullfile(importsPath, 'qDixon_raw');
-        if ~exist(qdixonPath, 'dir')
+
+        qdixonPath = fullfile(importsPath,'qDixon_raw');
+
+        if ~exist(qdixonPath,'dir')
             mkdir(qdixonPath);
         end
 
         echoGroups = group_qdixon_by_echo(groups.qDixon_raw);
 
-        for e = 1:length(echoGroups)
-            te = echoGroups(e).EchoTime;
-            teLabel = strrep(sprintf('TE_%.3f', te), '.', 'p');
+        echoVolumes = cell(1,length(echoGroups));
+        echoTimes = zeros(1,length(echoGroups));
+        refAcq = [];
 
-            tePath = fullfile(qdixonPath, teLabel);
-            if ~exist(tePath, 'dir')
+        for e = 1:length(echoGroups)
+
+            te = echoGroups(e).EchoTime;
+            echoTimes(e) = te;
+
+            teLabel = strrep(sprintf('TE_%.3f',te),'.','p');
+
+            tePath = fullfile(qdixonPath,teLabel);
+
+            if ~exist(tePath,'dir')
                 mkdir(tePath);
             end
 
-            outputFile = fullfile(tePath, 'acquisition.mat');
-            save_dicom_group(echoGroups(e).files, outputFile);
+            outputFile = fullfile(tePath,'acquisition.mat');
 
-            fprintf('  Saved qDixon_raw / %s\n', teLabel);
+            save_dicom_group(echoGroups(e).files,outputFile);
+
+            tmp = load(outputFile);
+            echoVolumes{e} = tmp.acquisition.volume;
+
+            if isempty(refAcq)
+                refAcq = tmp.acquisition;
+            end
+
+            fprintf('  Saved qDixon_raw / %s\n',teLabel);
+
         end
+
+
+        %% Sort echoes
+
+        [echoTimes,sortIdx] = sort(echoTimes);
+        echoVolumes = echoVolumes(sortIdx);
+
+
+        %% Verify dimensions
+
+        refSize = size(echoVolumes{1});
+
+        for e = 2:length(echoVolumes)
+
+            if ~isequal(size(echoVolumes{e}),refSize)
+                error('Echo volume size mismatch between echoes.');
+            end
+
+        end
+
+
+        %% Build MAGORINO 5D array
+
+        nx = refSize(1);
+        ny = refSize(2);
+        nz = refSize(3);
+        nEchoes = length(echoVolumes);
+
+        images = zeros(nx, ny, nz, 1, nEchoes, 'single');
+
+        for e = 1:nEchoes
+            images(:,:,:,1,e) = single(echoVolumes{e});
+        end
+
+
+        %% Build imData struct
+
+        imData = struct();
+
+        imData.images = images;
+
+        % TE as 1 x n row vector in seconds
+        imData.TE = echoTimes(:)' / 1000;
+
+        if isfield(refAcq,'fieldStrength')
+            imData.FieldStrength = double(refAcq.fieldStrength);
+        elseif isfield(refAcq,'magneticFieldStrength')
+            imData.FieldStrength = double(refAcq.magneticFieldStrength);
+        else
+            warning('Field strength not found; set manually later.');
+            imData.FieldStrength = [];
+        end
+
+        imData.protocolName = refAcq.protocolName;
+
+        % Default MAGORINO setting
+        imData.fittingIndent = 0;
+
+        % Useful metadata
+        imData.nEchoes = nEchoes;
+        imData.size = size(images);
+
+
+        %% Store metadata
+
+        imData.patientID = rawPatient;
+        imData.timepoint = rawTimepoint;
+
+        imData.paths.processedRoot = cfg.paths.processedData;
+        imData.paths.analysisRoot = cfg.paths.analysisData;
+        imData.paths.importsPath = qdixonPath;
+
+
+        %% Save MAGORINO input
+
+        save(fullfile(qdixonPath,'magorino_imData.mat'),'imData','-v7.3');
+
+        fprintf('  Saved MAGORINO-compatible imData\n');
+
     end
 
+
     nImported = nImported + 1;
+
 end
 
+
 fprintf('\n----- Summary -----\n');
-fprintf('Raw scans detected: %d\n', nRaw);
-fprintf('Processed scans detected: %d\n', nProcessed);
-fprintf('New scans imported: %d\n', nImported);
+fprintf('Raw scans detected: %d\n',nRaw);
+fprintf('Processed scans detected: %d\n',nProcessed);
+fprintf('New scans imported: %d\n',nImported);
 fprintf('-------------------\n');
