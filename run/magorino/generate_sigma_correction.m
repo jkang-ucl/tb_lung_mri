@@ -8,7 +8,7 @@ addpath(genpath(fullfile(scriptDir,'..','..','src')))
 
 cfg = load_config();
 
-reps = 10;
+reps = 1000;
 fieldStrength = 3;
 
 fprintf('Generating sigma correction...\n');
