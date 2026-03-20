@@ -1,4 +1,4 @@
-function results = RicianMagnitudeFitting_WithSigma (echotimes, tesla, Smagnitude, sigmaInit, GT, algoparams) 
+function results = RicianMagnitudeFitting_WithSigma (echotimes, tesla, Smagnitude, sigmaInit, GT, algoparams)
 %function outparams = RicianMagnitudeFitting_WithSigma (echotimes, tesla, Smagnitude, sigmaInit, GT, algoparams)
 
 % Description: Implements complex fitting with specified bounds
@@ -35,17 +35,17 @@ Ricianfitting.objective = @(p) -R2RicianObj_WithSigma(p,echotimes,tesla,Smagnitu
 Ricianfitting.lb = algoparams.lb;
 
 % % set the parameter upper bound
-Ricianfitting.ub = algoparams.ub; 
+Ricianfitting.ub = algoparams.ub;
 
 % First assume LOW FF (WATER DOMINANT) TISSUE (Use first echo to provide water guess)
 % Initalise sigma to a reasonable value (initially try 30)
-Ricianfitting.x0 = [0.001, algoparams.Sinit, algoparams.vinit, sigmaInit]'; 
+Ricianfitting.x0 = [0.001, algoparams.Sinit, algoparams.vinit, sigmaInit]';
 
 % run the optimisation
 [pmin1, fmin1] = fmincon(Ricianfitting); %fmin is the minimised SSE
 
 % Next assume HIGH FF (FAT DOMINANT) TISSUE (Use first echo to provide water guess)
-Ricianfitting.x0 = [algoparams.Sinit, 0.001, algoparams.vinit, sigmaInit]'; 
+Ricianfitting.x0 = [algoparams.Sinit, 0.001, algoparams.vinit, sigmaInit]';
 
 % run the optimisation
 [pmin2, fmin2] = fmincon(Ricianfitting); %fmin is the minimised SSE
@@ -69,7 +69,7 @@ results.fmin3=fmin3;
 % Choose the estimates from the best residual
 
 if fmin1<=fmin2
-    
+
 results.F = pmin1(1);
 results.W = pmin1(2);
 results.R2 = pmin1(3);
@@ -85,7 +85,7 @@ results.chosenmin=1;
 [~,results.SSEtrue]=R2Obj(pmin1,echotimes,tesla,abs(GT.S),sigmaInit);
 
 else
-    
+
 results.F = pmin2(1);
 results.W = pmin2(2);
 results.R2 = pmin2(3);
@@ -108,6 +108,3 @@ end
 % [~,results.SSEtrue_gtinit]=R2Obj(pmin3,echotimes,tesla,abs(GT.S),sig); %Relative to ground-truth noise-free signal
 
 end
-
-
-
